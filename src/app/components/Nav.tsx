@@ -49,8 +49,8 @@ const Header = () => {
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo and Title */}
-          <div className="flex items-center space-x-2 space-x-reverse">
+          {/* Logo and Title with Home Link */}
+          <Link href="/" className="flex items-center space-x-2 space-x-reverse">
             <Image
               src="/logo.png"
               alt="أكاديمية 24"
@@ -59,23 +59,27 @@ const Header = () => {
               className="h-10 w-auto"
             />
             <div>
-              <h1 className="text-lg font-bold text-primary arabic-text">
-                أكاديمية 24
-              </h1>
-              <p className="text-xs text-muted-foreground arabic-text">
-                للغات والتدريب
-              </p>
+              <h1 className="text-lg font-bold text-primary arabic-text">أكاديمية 24</h1>
+              <p className="text-xs text-muted-foreground arabic-text">للغات والتدريب</p>
             </div>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8 space-x-reverse">
+             <Link
+              href="/"
+              className="text-foreground hover:text-primary transition-colors arabic-text"
+            >
+             الرئيسية
+            </Link>
+
             <Link
               href="/Courses"
               className="text-foreground hover:text-primary transition-colors arabic-text"
             >
               الدورات
             </Link>
+
             {user && userRole === "admin" && (
               <>
                 <Link
@@ -108,12 +112,15 @@ const Header = () => {
                 دوراتي
               </Link>
             )}
+
+           
             <a
-  href="#contact"
-  className="text-foreground hover:text-primary transition-colors arabic-text"
->
-  تواصل معنا
-</a>
+              href="#contact"
+              className="text-foreground hover:text-primary transition-colors arabic-text"
+            >
+              تواصل معنا
+            </a>
+
             <Link
               href="/Aboutus"
               className="text-foreground hover:text-primary transition-colors arabic-text"
@@ -168,6 +175,13 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden absolute top-16 inset-x-0 bg-background border-b border-border animate-fade-in">
             <div className="px-4 py-4 space-y-4">
+               <a
+                href="/"
+                className="block text-foreground hover:text-primary transition-colors arabic-text"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                الرئيسية
+              </a>
               <Link
                 href="/Courses"
                 className="block text-foreground hover:text-primary transition-colors arabic-text"
@@ -211,13 +225,17 @@ const Header = () => {
                   دوراتي
                 </Link>
               )}
+
+             
+
               <a
-  href="#contact"
-  className="block text-foreground hover:text-primary transition-colors arabic-text"
-  onClick={() => setIsMenuOpen(false)}
->
-  تواصل معنا
-</a>
+                href="#contact"
+                className="block text-foreground hover:text-primary transition-colors arabic-text"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                تواصل معنا
+              </a>
+
               <Link
                 href="/Aboutus"
                 className="block text-foreground hover:text-primary transition-colors arabic-text"
@@ -225,6 +243,7 @@ const Header = () => {
               >
                 من نحن
               </Link>
+
               <div className="pt-4 space-y-2">
                 {!user ? (
                   <>
