@@ -5,7 +5,7 @@ import AuthProvider from '@/provider/AuthProvider'
 import Header from './components/Nav'
 
 export const metadata: Metadata = {
-  title: 'اكاديمية 24 للتدريب واللغات',
+  title: 'اكاديمية 24 للغات والتدريب',
   description: 'اكاديمية 24 هي منصة للتدريب والتأهيل عبر الإنترنت لمساعدة الأفراد على تطوير مهاراتهم في مختلف المجالات.',
   themeColor: '#051568',
   keywords: 'اكاديمية 24, تعليم عبر الإنترنت, دورات تدريبية, تأهيل مهني, تعلم عبر الإنترنت',
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   og: {
     title: 'اكاديمية 24 للتدريب والتأهيل',
     description: 'انضم إلى أكاديمية 24 للحصول على أفضل الدورات التدريبية عبر الإنترنت في مجالات متعددة.',
-    url: 'https://24academy.vercel.app/', // رابط الموقع
+    url: 'https://www.24academy.net/', // رابط الموقع
     image: '/logo.png', // مسار صورة الشعار في مجلد public
     type: 'website',
   },
@@ -66,7 +66,7 @@ export default function RootLayout({
 
         {/* Twitter Meta Tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="اكاديمية 24 للتدريب والتأهيل" />
+        <meta name="twitter:title" content="اكاديمية 24 للغات والتدريب" />
         <meta name="twitter:description" content="انضم إلى أكاديمية 24 للحصول على أفضل الدورات التدريبية عبر الإنترنت في مجالات متعددة." />
         <meta name="twitter:image" content="/logo.png" /> {/* الشعار من مجلد public */}
       </head>
