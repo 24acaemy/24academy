@@ -1,16 +1,19 @@
 "use client";
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { auth, db } from '@/services/firebase';
-import { useRouter } from 'next/navigation';
-import { FaEnvelope, FaUserCircle } from 'react-icons/fa';
-import { doc, getDoc } from 'firebase/firestore';
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { auth, db } from "@/services/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { Button } from "@/app/components/ui/button";
+import { Menu, X } from "lucide-react";
+import { FaUserCircle } from "react-icons/fa";
 
 const Header = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();
 
@@ -21,222 +24,243 @@ const Header = () => {
         const userDocRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
-          const userData = docSnap.data();
-          setUserRole(userData.role);
+          setUserRole(docSnap.data().role);
         }
       } else {
         setUserRole(null);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      router.push('/login');
+      router.push("/login");
     } catch (error) {
       console.error("Error signing out: ", error);
     }
   };
 
   return (
-    <header className="bg-white shadow-md backdrop-blur-lg bg-opacity-50 sticky top-0 z-50" dir="rtl">
-      <div className="mx-auto flex h-16 max-w-screen-xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
-        <Link href="/" className="flex items-center">
-          <span className="sr-only">الصفحة الرئيسية</span>
-          <Image
-            src="/logo.png"
-            alt="الشعار"
-            width={70}
-            height={15}
-            className="object-contain max-w-full h-auto"
-          />
-        </Link>
+    <header
+      className="fixed top-0 w-full z-50 bg-background/95 backdrop-blur-sm border-b border-border"
+      dir="rtl"
+    >
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo and Title */}
+          <div className="flex items-center space-x-2 space-x-reverse">
+            <Image
+              src="/logo.png"
+              alt="أكاديمية 24"
+              width={40}
+              height={40}
+              className="h-10 w-auto"
+            />
+            <div>
+              <h1 className="text-lg font-bold text-primary arabic-text">
+                أكاديمية 24
+              </h1>
+              <p className="text-xs text-muted-foreground arabic-text">
+                للغات والتدريب
+              </p>
+            </div>
+          </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
-          <ul className="flex items-center gap-6 text-sm">
-            <li>
-              <Link className="text-gray-600 hover:text-[#051568] transition duration-200" href="/Courses">
-                الدورات
-              </Link>
-            </li>
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-8 space-x-reverse">
+            <Link
+              href="/Courses"
+              className="text-foreground hover:text-primary transition-colors arabic-text"
+            >
+              الدورات
+            </Link>
             {user && userRole === "admin" && (
               <>
-                <li>
-                  <Link className="text-gray-600 hover:text-[#051568] transition duration-200" href="/admin-dashboard">
-                    لوحة التحكم
-                  </Link>
-                </li>
-                <li>
-                  <Link className="text-gray-600 hover:text-[#051568] transition duration-200" href="/admin-reports">
-                    التقارير
-                  </Link>
-                </li>
+                <Link
+                  href="/admin-dashboard"
+                  className="text-foreground hover:text-primary transition-colors arabic-text"
+                >
+                  لوحة التحكم
+                </Link>
+                <Link
+                  href="/admin-reports"
+                  className="text-foreground hover:text-primary transition-colors arabic-text"
+                >
+                  التقارير
+                </Link>
               </>
             )}
             {user && userRole === "teacher" && (
-              <>
-                <li>
-                  <Link className="text-gray-600 hover:text-[#051568] transition duration-200" href="/teacher-dashboard">
-                  لوحة التخكم
-                  </Link>
-                </li>
-                
-              </>
+              <Link
+                href="/teacher-dashboard"
+                className="text-foreground hover:text-primary transition-colors arabic-text"
+              >
+                لوحة التحكم
+              </Link>
             )}
             {user && userRole !== "admin" && userRole !== "teacher" && (
-              <li>
-                <Link className="text-gray-600 hover:text-[#051568] transition duration-200" href="/student-dashboard/my-courses">
-                  دوراتي
-                </Link>
-              </li>
+              <Link
+                href="/student-dashboard/my-courses"
+                className="text-foreground hover:text-primary transition-colors arabic-text"
+              >
+                دوراتي
+              </Link>
             )}
-         
-            <li>
-              <Link className="text-gray-600 hover:text-[#051568] transition duration-200" href="/Aboutus">
-                من نحن
-              </Link>
-            </li>
-          </ul>
-        </nav>
+            <a
+  href="#contact"
+  className="text-foreground hover:text-primary transition-colors arabic-text"
+>
+  تواصل معنا
+</a>
+            <Link
+              href="/Aboutus"
+              className="text-foreground hover:text-primary transition-colors arabic-text"
+            >
+              من نحن
+            </Link>
+          </nav>
 
-        {/* User Section */}
-        <div className="flex items-center gap-4">
-          {!user ? (
-            <div className="flex gap-4">
-              <Link
-                className="rounded-md bg-[#051568] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#03457d] transition duration-200"
-                href="/login"
-              >
-                تسجيل الدخول
-              </Link>
-              <Link
-                className="hidden rounded-md bg-gray-100 px-5 py-2.5 text-sm font-medium text-[#051568] hover:bg-gray-200 transition duration-200 sm:block"
-                href="/signup"
-              >
-                التسجيل
-              </Link>
-            </div>
-          ) : (
-            <div className="relative">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 bg-gray-100 p-2.5 rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer"
-              >
-                <FaUserCircle className="text-[#051568] text-xl" />
-                <span className="text-gray-600 text-sm font-medium">{user.email}</span>
-              </button>
-              {isDropdownOpen && (
-                <div className="absolute left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-md w-48 z-10">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200"
-                  >
-                    تسجيل الخروج
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Desktop Auth */}
+          <div className="hidden md:flex items-center space-x-4 space-x-reverse">
+            {!user ? (
+              <>
+                <Button variant="outline" className="arabic-text">
+                  <Link href="/login">تسجيل الدخول</Link>
+                </Button>
+                <Button className="academy-button-primary arabic-text">
+                  <Link href="/signup">إنشاء حساب</Link>
+                </Button>
+              </>
+            ) : (
+              <div className="relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 bg-gray-100 p-2.5 rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer"
+                >
+                  <FaUserCircle className="text-[#051568] text-xl" />
+                  <span className="text-gray-600 text-sm font-medium">
+                    {user.email}
+                  </span>
+                </button>
+                {isDropdownOpen && (
+                  <div className="absolute left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-md w-48 z-10">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200"
+                    >
+                      تسجيل الخروج
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
 
-        {/* Mobile Menu Toggle */}
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="block rounded bg-gray-100 p-2.5 text-gray-600 hover:text-gray-800 transition duration-200 md:hidden"
-        >
-          <span className="sr-only">فتح القائمة</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Mobile Navigation Menu */}
-      <div
-        className={`md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} bg-white shadow-md p-4 transition-all ease-in-out duration-300`}
-      >
-        <nav aria-label="Global" className="flex flex-col gap-4">
-          <ul>
-            <li className="border-b border-gray-200 py-2">
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden absolute top-16 inset-x-0 bg-background border-b border-border animate-fade-in">
+            <div className="px-4 py-4 space-y-4">
               <Link
-                className="block text-gray-600 hover:text-[#051568] transition duration-200 px-4 py-2 rounded-md hover:bg-gray-100"
                 href="/Courses"
-                onClick={() => setIsMobileMenuOpen(false)}
+                className="block text-foreground hover:text-primary transition-colors arabic-text"
+                onClick={() => setIsMenuOpen(false)}
               >
                 الدورات
               </Link>
-            </li>
-            {user && userRole === "admin" && (
-              <>
-                <li className="border-b border-gray-200 py-2">
+              {user && userRole === "admin" && (
+                <>
                   <Link
-                    className="block text-gray-600 hover:text-[#051568] transition duration-200 px-4 py-2 rounded-md hover:bg-gray-100"
                     href="/admin-dashboard"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block text-foreground hover:text-primary transition-colors arabic-text"
+                    onClick={() => setIsMenuOpen(false)}
                   >
                     لوحة التحكم
                   </Link>
-                </li>
-                <li className="border-b border-gray-200 py-2">
                   <Link
-                    className="block text-gray-600 hover:text-[#051568] transition duration-200 px-4 py-2 rounded-md hover:bg-gray-100"
                     href="/admin-reports"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block text-foreground hover:text-primary transition-colors arabic-text"
+                    onClick={() => setIsMenuOpen(false)}
                   >
                     التقارير
                   </Link>
-                </li>
-              </>
-            )}
-            {user && userRole === "teacher" && (
-              <>
-                <li className="border-b border-gray-200 py-2">
-                  <Link
-                    className="block text-gray-600 hover:text-[#051568] transition duration-200 px-4 py-2 rounded-md hover:bg-gray-100"
-                    href="/teacher-dashboard"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                   لوحة التحكم
-                  </Link>
-                </li>
-               
-              </>
-            )}
-            {user && userRole !== "admin" && userRole !== "teacher" && (
-              <li className="border-b border-gray-200 py-2">
+                </>
+              )}
+              {user && userRole === "teacher" && (
                 <Link
-                  className="block text-gray-600 hover:text-[#051568] transition duration-200 px-4 py-2 rounded-md hover:bg-gray-100"
+                  href="/teacher-dashboard"
+                  className="block text-foreground hover:text-primary transition-colors arabic-text"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  لوحة التحكم
+                </Link>
+              )}
+              {user && userRole !== "admin" && userRole !== "teacher" && (
+                <Link
                   href="/student-dashboard/my-courses"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block text-foreground hover:text-primary transition-colors arabic-text"
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   دوراتي
                 </Link>
-              </li>
-            )}
-       
-            <li className="py-2">
+              )}
+              <a
+  href="#contact"
+  className="block text-foreground hover:text-primary transition-colors arabic-text"
+  onClick={() => setIsMenuOpen(false)}
+>
+  تواصل معنا
+</a>
               <Link
-                className="block text-gray-600 hover:text-[#051568] transition duration-200 px-4 py-2 rounded-md hover:bg-gray-100"
                 href="/Aboutus"
-                onClick={() => setIsMobileMenuOpen(false)}
+                className="block text-foreground hover:text-primary transition-colors arabic-text"
+                onClick={() => setIsMenuOpen(false)}
               >
                 من نحن
               </Link>
-            </li>
-          </ul>
-        </nav>
+              <div className="pt-4 space-y-2">
+                {!user ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full arabic-text"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        router.push("/login");
+                      }}
+                    >
+                      تسجيل الدخول
+                    </Button>
+                    <Button
+                      className="w-full academy-button-primary arabic-text"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        router.push("/signup");
+                      }}
+                    >
+                      إنشاء حساب
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full arabic-text"
+                    onClick={handleLogout}
+                  >
+                    تسجيل الخروج
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );
