@@ -195,7 +195,7 @@ const Register = () => {
                             {/* Form Fields - Remain the same as before */}
                             <div className="col-span-6 sm:col-span-3">
                                 <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                                    الاسم الأول
+                                  الاسم كاملاً
                                 </label>
                                 <input
                                     type="text"
