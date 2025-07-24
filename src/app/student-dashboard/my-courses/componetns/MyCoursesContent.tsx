@@ -46,7 +46,7 @@ const MyCoursesContent = () => {
                 })
                 .catch((error) => {
                     console.error("Error fetching courses:", error);
-                    setError("There was an error fetching your courses. Please try again later.");
+                
                     setLoading(false);
                 });
         }
