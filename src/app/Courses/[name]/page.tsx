@@ -96,44 +96,89 @@ const CourseDetails = ({ user }: { user: User | null }) => {
     !isAmountValid ||
     isSubmitting;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitDisabled) {
-      setErrorMessage(
-        !isAmountValid
-          ? `المبلغ المدفوع غير صحيح، يجب أن يكون ${requiredPrice} ${currencyLabel}`
-          : "يرجى ملء جميع الحقول المطلوبة."
-      );
-      return;
-    }
-    setIsSubmitting(true);
-    setErrorMessage("");
-    try {
-      const payload = {
-        pay_method: selectedPaymentMethod,
-        account_no: accountNumber,
-        trans_no: transactionNumber,
-        amount: requiredPrice,
-        email: currentUser?.email || "",
-        co_id: course.id,
-        wanted_time: wantedTime,
-      };
-      const res = await axios.post("https://24onlinesystem.vercel.app/payments", payload);
-      if (res.status === 201) {
-        alert("تم إرسال بيانات الدفع بنجاح!");
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // التحقق من إذا كانت البيانات صحيحة
+  if (isSubmitDisabled) {
+    setErrorMessage(
+      !isAmountValid
+        ? `المبلغ المدفوع غير صحيح، يجب أن يكون ${requiredPrice} ${currencyLabel}`
+        : "يرجى ملء جميع الحقول المطلوبة."
+    );
+    return;
+  }
+
+  // بدء حالة إرسال البيانات
+  setIsSubmitting(true);
+  setErrorMessage("");
+
+  try {
+    // البيانات التي سيتم إرسالها إلى السيرفر
+    const payload = {
+      pay_method: selectedPaymentMethod,
+      account_no: accountNumber,
+      trans_no: transactionNumber,
+      amount: requiredPrice,
+      email: currentUser?.email || "",
+      co_id: course.id,
+      wanted_time: wantedTime,
+    };
+
+    // إرسال البيانات إلى السيرفر
+    const res = await axios.post("https://24onlinesystem.vercel.app/payments", payload);
+
+    // إذا تم إرسال البيانات بنجاح إلى السيرفر
+    if (res.status === 201) {
+      // إرسال البيانات إلى تيليجرام
+      const message = `
+📥 *طلب تسجيل في الدورة*
+——————————————
+💳 *طريقة الدفع:* ${selectedPaymentMethod}
+🏦 *رقم الحساب:* ${accountNumber}
+🔁 *رقم العملية:* ${transactionNumber}
+💰 *المبلغ المدفوع:* ${amountPaid} ${currencyLabel}
+📧 *البريد الإلكتروني:* ${currentUser?.email || "غير متوفر"}
+⏰ *الوقت المطلوب:* ${wantedTime}
+           
+🏷️ *اسم الدورة:* ${course.name}
+`;
+
+  const TOKEN = process.env.NEXT_PUBLIC_BOT_TOKEN;
+const CHAT_ID = process.env.NEXT_PUBLIC_CHAT_ID;
+
+      try {
+        const telegramRes = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: CHAT_ID,
+            text: message,
+            parse_mode: 'Markdown',
+          }),
+        });
+
+        if (!telegramRes.ok) throw new Error('Error sending message to Telegram');
+        
         setShowModal(false);
         router.push("/student-dashboard/my-courses");
+      } catch (telegramErr) {
+       
       }
-    } catch (err: any) {
-      console.error(err);
-      const msg = axios.isAxiosError(err)
-        ? err.response?.data?.message || err.response?.data?.error || "حدث خطأ أثناء معالجة طلبك"
-        : "حدث خطأ غير متوقع";
-      setErrorMessage(msg);
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  } catch (err: any) {
+    // في حالة حدوث خطأ أثناء إرسال البيانات إلى السيرفر
+    console.error(err);
+    const msg = axios.isAxiosError(err)
+      ? err.response?.data?.message || err.response?.data?.error || "حدث خطأ أثناء معالجة طلبك"
+      : "حدث خطأ غير متوقع";
+    setErrorMessage(msg);
+  } finally {
+    // إيقاف حالة إرسال البيانات
+    setIsSubmitting(false);
+  }
+};
+
 
   if (isLoading) return (
     <div className="container mx-auto flex justify-center items-center h-80">
