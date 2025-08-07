@@ -8,12 +8,12 @@ export const metadata: Metadata = {
   title: 'اكاديمية 24 للغات والتدريب',
   description: 'اكاديمية 24 هي منصة للتدريب والتأهيل عبر الإنترنت لمساعدة الأفراد على تطوير مهاراتهم في مختلف المجالات.',
   themeColor: '#051568',
-  keywords: 'اكاديمية 24, تعليم عبر الإنترنت, دورات تدريبية, تأهيل مهني, تعلم عبر الإنترنت',
+  keywords: 'اليمن, اونلاين, اكاديمية 24, تعليم عبر الإنترنت, دورات تدريبية, تأهيل مهني, تعلم عبر الإنترنت',
   authors: [{ name: '24 Academy' }],
   
   // Open Graph Meta Tags
   og: {
-    title: 'اكاديمية 24 للتدريب والتأهيل',
+    title: 'اكاديمية 24 للغات والتدريب',
     description: 'انضم إلى أكاديمية 24 للحصول على أفضل الدورات التدريبية عبر الإنترنت في مجالات متعددة.',
     url: 'https://www.24academy.net/', // رابط الموقع
     image: '/logo.png', // مسار صورة الشعار في مجلد public
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   // Twitter Meta Tags
   twitter: {
     card: 'summary_large_image',
-    title: 'اكاديمية 24 للتدريب والتأهيل',
+    title: 'اكاديمية 24 للغات والتدريب',
     description: 'انضم إلى أكاديمية 24 للحصول على أفضل الدورات التدريبية عبر الإنترنت في مجالات متعددة.',
     image: '/logo.png', // مسار صورة الشعار في مجلد public
   },
@@ -52,14 +52,14 @@ export default function RootLayout({
 
         {/* ميتا بيانات إضافية للموقع */}
         <meta name="theme-color" content="#051568" />
-        <meta name="description" content="اكاديمية 24 هي منصة للتدريب والتأهيل عبر الإنترنت لمساعدة الأفراد على تطوير مهاراتهم في مختلف المجالات." />
-        <meta name="keywords" content="اكاديمية 24, تعليم عبر الإنترنت, دورات تدريبية, تأهيل مهني, تعلم عبر الإنترنت" />
+        <meta name="description" content="اكاديمية 24 هي منصة للتدريب والتأهيل عبر الإنترنت لمساعدة الأفراد على تطوير مهاراتهم في مختلف المجالات ابرزها اللغات." />
+        <meta name="keywords" content=",اليمن, اونلاين, اكاديمية 24, تعليم عبر الإنترنت, دورات تدريبية, تأهيل مهني, تعلم عبر الإنترنت" />
         <meta name="author" content="24 Academy" />
         
         {/* Open Graph Meta Tags */}
-        <meta property="og:title" content="اكاديمية 24 للتدريب والتأهيل" />
+        <meta property="og:title" content="اكاديمية 24 للغات والتدريب" />
         <meta property="og:description" content="انضم إلى أكاديمية 24 للحصول على أفضل الدورات التدريبية عبر الإنترنت في مجالات متعددة." />
-        <meta property="og:url" content="https://24academy.vercel.app/" />
+        <meta property="og:url" content="https://24academy.net/" />
         <meta property="og:image" content="/logo.png" /> {/* الشعار من مجلد public */}
         <meta property="og:type" content="website" />
 <link rel="icon" href="/logo.ico" type="image/x-icon" />
