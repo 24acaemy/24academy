@@ -53,7 +53,6 @@ const AddTeacher = () => {
 
                 setNationalities(nationalitiesList);
             } catch (err) {
-                alert("حدث خطأ في تحميل الجنسيات");
             }
         };
 
