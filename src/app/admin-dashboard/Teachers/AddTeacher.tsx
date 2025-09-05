@@ -70,7 +70,6 @@ const AddTeacher = () => {
     const validateForm = () => {
         const newErrors = {
             name: teacherData.name ? '' : 'اسم المعلم مطلوب',
-            nationality: teacherData.nationality ? '' : 'الجنسية مطلوبة',
             phone: teacherData.phone ? (/^\d+$/.test(teacherData.phone) ? '' : 'رقم الهاتف يجب أن يحتوي على أرقام فقط') : 'رقم الهاتف مطلوب',
             gender: teacherData.gender ? '' : 'الجنس مطلوب',
             birthdate: teacherData.birthdate ? '' : 'تاريخ الميلاد مطلوب',
@@ -187,7 +186,6 @@ const AddTeacher = () => {
                                             </option>
                                         ))}
                                     </select>
-                                    {errors.nationality && <p className="text-red-500 text-xs mt-1">{errors.nationality}</p>}
                                 </div>
 
                                 <div>
