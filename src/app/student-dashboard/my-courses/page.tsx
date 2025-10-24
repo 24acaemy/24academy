@@ -1,65 +1,71 @@
 "use client";
 import { useState } from 'react';
-import { BookOpenIcon, UserCircleIcon, CreditCardIcon } from '@heroicons/react/24/outline'; // Updated import for Heroicons v2
-import MyCoursesContent from './componetns/MyCoursesContent';
-import MyEnrollmentsContent from './componetns/MyEnrollmentsContent';
-import MyPaymentsContent from './componetns/MyPaymentsContent';
-import Tab from './componetns/Tab';
+import { BookOpenIcon, UserCircleIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import MyCoursesContent from './components/MyCoursesContent';
+import MyEnrollmentsContent from './components/MyEnrollmentsContent';
+import MyPaymentsContent from './components/MyPaymentsContent';
+import Tab from './components/Tab';
 
 const Home = () => {
-    const [activeTab, setActiveTab] = useState<string>('my-courses');
+  const [activeTab, setActiveTab] = useState<string>('my-courses');
 
-    const tabs = [
-        {
-            id: 'my-courses',
-            label: 'دوراتي',
-            icon: <BookOpenIcon className="w-6 h-6 inline-block mr-2" /> // Study / Course Icon
-        },
-        {
-            id: 'my-enrollments',
-            label: 'مسجلاتي',
-            icon: <UserCircleIcon className="w-6 h-6 inline-block mr-2" /> // Enrollment / User Icon
-        },
-        {
-            id: 'my-payments',
-            label: 'مدفوعاتي',
-            icon: <CreditCardIcon className="w-6 h-6 inline-block mr-2" /> // Payment / Credit Card Icon
-        },
-    ];
+  const tabs = [
+    {
+      id: 'my-courses',
+      label: 'دوراتي',
+      icon: <BookOpenIcon className="w-6 h-6 inline-block mr-2" />
+    },
+    {
+      id: 'my-enrollments',
+      label: 'مسجلاتي',
+      icon: <UserCircleIcon className="w-6 h-6 inline-block mr-2" />
+    },
+    {
+      id: 'my-payments',
+      label: 'مدفوعاتي',
+      icon: <CreditCardIcon className="w-6 h-6 inline-block mr-2" />
+    },
+  ];
 
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'my-courses':
-                return <MyCoursesContent />;
-            case 'my-enrollments':
-                return <MyEnrollmentsContent />;
-            case 'my-payments':
-                return <MyPaymentsContent />;
-            default:
-                return null;
-        }
-    };
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'my-courses':
+        return <MyCoursesContent />;
+      case 'my-enrollments':
+        return <MyEnrollmentsContent />;
+      case 'my-payments':
+        return <MyPaymentsContent />;
+      default:
+        return null;
+    }
+  };
 
-    return (
-        <div className="max-w-4xl mx-auto p-6">
-            {/* Tab Bar */}
-            <div className="flex justify-between bg-[#051568] rounded-lg shadow-lg overflow-hidden mb-6">
-                {tabs.map((tab) => (
-                    <Tab
-                        key={tab.id}
-                        id={tab.id}
-                        label={tab.label}
-                        icon={tab.icon}
-                        activeTab={activeTab}
-                        onClick={setActiveTab}
-                    />
-                ))}
-            </div>
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      {/* Sticky Tab Bar */}
+      <div
+        className="
+          sticky top-[64px] z-40  /* Adjust top to match navbar height */
+          flex bg-[#051568] rounded-lg shadow-lg mb-6 
+          overflow-x-auto scrollbar-hide sm:justify-between
+        "
+      >
+        {tabs.map((tab) => (
+          <Tab
+            key={tab.id}
+            id={tab.id}
+            label={tab.label}
+            icon={tab.icon}
+            activeTab={activeTab}
+            onClick={setActiveTab}
+          />
+        ))}
+      </div>
 
-            {/* Content */}
-            {renderContent()}
-        </div>
-    );
+      {/* Content */}
+      <div className="mt-4">{renderContent()}</div>
+    </div>
+  );
 };
 
 export default Home;
