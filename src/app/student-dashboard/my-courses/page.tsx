@@ -1,10 +1,11 @@
 "use client";
 import { useState } from 'react';
 import { BookOpenIcon, UserCircleIcon, CreditCardIcon } from '@heroicons/react/24/outline';
-import MyCoursesContent from './components/MyCoursesContent';
-import MyEnrollmentsContent from './components/MyEnrollmentsContent';
-import MyPaymentsContent from './components/MyPaymentsContent';
-import Tab from './components/Tab';
+import MyCoursesContent from './componetns/MyCoursesContent';
+import MyEnrollmentsContent from './componetns/MyEnrollmentsContent';
+import MyPaymentsContent from './componetns/MyPaymentsContent';
+import Tab from './componetns/Tab';
+
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState<string>('my-courses');
