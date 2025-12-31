@@ -1,9 +1,9 @@
 import React from 'react';
 
 interface TabBarProps {
-    activeTab: 'students' | 'lessons' ; // Tab types for the course details
-    onTabChange: (tab: 'students' | 'lessons' ) => void; // Function to handle tab changes
-    dynamicTabs: { label: string; value: 'students' | 'lessons'  }[]; // Dynamic tab options
+    activeTab: 'students' | 'lessons'| 'marks'; // Tab types for the course details
+    onTabChange: (tab: 'students' | 'lessons' | 'marks') => void; // Function to handle tab changes
+    dynamicTabs: { label: string; value: 'students' | 'lessons'| 'marks'  }[]; // Dynamic tab options
 }
 
 const TabBar: React.FC<TabBarProps> = ({ activeTab, onTabChange, dynamicTabs }) => {
