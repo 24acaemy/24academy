@@ -24,7 +24,7 @@ const CourseDetails = () => {
     const [courseData, setCourseData] = useState<CourseData | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'students' | 'lessons' >('students'); // Set initial tab
+    const [activeTab, setActiveTab] = useState<'students' | 'lessons' | 'grades'>('students'); // Set initial tab
 
     useEffect(() => {
         const fetchCourseData = async () => {
@@ -88,7 +88,7 @@ const CourseDetails = () => {
     const dynamicTabs = [
         { label: 'الطلاب', value: 'students' },
         { label: 'الدروس', value: 'lessons' },
-    
+       { label: 'الدرجات', value: 'grades' },
     ];
 
     return (
