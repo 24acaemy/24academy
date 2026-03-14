@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";  // Import useParams
+import React, { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import axios from "axios";
 import CustomLoader from "@/app/components/spinned";
-import TabBar from "@/app/teacher-dashboard/[ass_id]/components/TabBar";
+import TabBar, { TeacherTab } from "@/app/teacher-dashboard/[ass_id]/components/TabBar";
 import LessonsTab from "./tabs/lessontab";
 import GradesTab from "./tabs/gradetab";
 import AttendanceTab from "./tabs/AttendanceTab";
@@ -18,36 +18,38 @@ interface CourseData {
     co_stu_id: string;
 }
 
-const CourseDetails = () => {
-    const { ass_id } = useParams();  // Use useParams to get ass_id
+type StudentTab = 'lessons' | 'Attendance' | 'grades';
+
+const dynamicTabs: { label: string; value: StudentTab }[] = [
+    { label: 'الدروس',  value: 'lessons'    },
+    { label: 'الحضور',  value: 'Attendance' },
+    { label: 'الدرجات', value: 'grades'     },
+];
+
+const CourseDetails: React.FC = () => {
+    const { ass_id } = useParams();
     const [courseData, setCourseData] = useState<CourseData | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'lessons' | 'Attendance' | 'grades'>('lessons');
+    const [loading, setLoading]       = useState<boolean>(true);
+    const [error, setError]           = useState<string | null>(null);
+    const [activeTab, setActiveTab]   = useState<StudentTab>('lessons');
 
     useEffect(() => {
-        if (!ass_id) return; // If ass_id is not available, don't proceed with the fetch
+        if (!ass_id) return;
 
-        console.log("Fetching data for ass_id:", ass_id); // Log ass_id to verify it's being passed correctly
-
-        const fetchCourseData = async () => {
+        const fetchCourseData = async (): Promise<void> => {
             try {
-                const response = await axios.get(`https://24onlinesystem.vercel.app/course_students/ass_id=${ass_id}`);
-                console.log("API Response:", response.data); // Log the response to verify the API response structure
-
-                const courses: CourseData[] = response.data;
-
-                const matchedCourse = courses.find((course) => course.ass_id === ass_id);
-                console.log("Matched Course:", matchedCourse); // Log matched course data
-
-                if (!matchedCourse) {
+                const response = await axios.get<CourseData[]>(
+                    `https://24onlinesystem.vercel.app/course_students/ass_id=${ass_id}`
+                );
+                const matched = response.data.find(
+                    (course) => course.ass_id === ass_id
+                );
+                if (!matched) {
                     setError("الدورة غير موجودة");
-                    setLoading(false);
                     return;
                 }
-
-                setCourseData(matchedCourse);
-            } catch (err) {
+                setCourseData(matched);
+            } catch {
                 setError("خطأ في تحميل البيانات");
             } finally {
                 setLoading(false);
@@ -57,30 +59,25 @@ const CourseDetails = () => {
         fetchCourseData();
     }, [ass_id]);
 
-    if (loading) return <div className="flex justify-center items-center min-h-screen"><CustomLoader /></div>;
-    if (error) return <div className="text-center text-red-500">{error}</div>;
+    if (loading) return (
+        <div className="flex justify-center items-center min-h-screen">
+            <CustomLoader />
+        </div>
+    );
 
-    let tabContent;
-    switch (activeTab) {
-        case "lessons":
-            tabContent = <LessonsTab ass_id={courseData?.ass_id || ""} />;
-            break;
-        case "Attendance":
-            tabContent = <AttendanceTab ass_id={courseData?.ass_id || ""} />;
-            break;
-        case "grades":
-            tabContent = <GradesTab ass_id={courseData?.ass_id || ""} />;
-            break;
-        default:
-            tabContent = <div>Select a tab</div>;
-            break;
-    }
+    if (error) return (
+        <div className="text-center text-red-500 mt-10">{error}</div>
+    );
 
-    const dynamicTabs = [
-        { label: 'الدروس', value: 'lessons' },
-        { label: 'الحضور', value: 'Attendance' },
-        { label: 'الدرجات', value: 'grades' },
-    ];
+    const id: string = courseData?.ass_id ?? "";
+
+    const renderTab = (): React.ReactNode => {
+        switch (activeTab) {
+            case "lessons":    return <LessonsTab    ass_id={id} />;
+            case "Attendance": return <AttendanceTab ass_id={id} />;
+            case "grades":     return <GradesTab     ass_id={id} />;
+        }
+    };
 
     return (
         <div className="p-6" dir="rtl">
@@ -91,9 +88,15 @@ const CourseDetails = () => {
             <p className="text-lg">المدرس: {courseData?.te_name}</p>
             <p className="text-lg">بداية الدورة: {courseData?.start_time}</p>
 
-            <TabBar activeTab={activeTab} onTabChange={setActiveTab} dynamicTabs={dynamicTabs} />
+            <TabBar
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                dynamicTabs={dynamicTabs}
+            />
 
-            {tabContent}
+            <div className="mt-6">
+                {renderTab()}
+            </div>
         </div>
     );
 };
