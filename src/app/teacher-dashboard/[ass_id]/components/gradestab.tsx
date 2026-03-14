@@ -30,6 +30,13 @@ interface FinalGradeForm {
     total_grade: string;
 }
 
+interface StudentData {
+    stu_id: string;
+    stu_name: string;
+    stu_email: string;
+    co_stu_id?: string;
+}
+
 interface EditGradeForm {
     stu_id: string;
     ass_id: string;
@@ -45,6 +52,7 @@ interface GradesTabProps {
 
 const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
     const [grades, setGrades]             = useState<GradeData[]>([]);
+    const [students, setStudents]         = useState<StudentData[]>([]);
     const [loading, setLoading]           = useState<boolean>(true);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -80,7 +88,21 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
         }
     };
 
-    useEffect(() => { fetchGrades(); }, [ass_id]);
+    const fetchStudents = async (): Promise<void> => {
+        try {
+            const response = await axios.get<StudentData[]>(
+                `https://24onlinesystem.vercel.app/course_students/ass_id=${ass_id}`
+            );
+            setStudents(response.data?.length > 0 ? response.data : []);
+        } catch {
+            // Silent fail for students - not critical
+        }
+    };
+
+    useEffect(() => { 
+        fetchGrades(); 
+        fetchStudents();
+    }, [ass_id]);
 
     const handleAdd = async (): Promise<void> => {
         if (parseFloat(addForm.score) > parseFloat(addForm.max_score)) {
@@ -294,9 +316,23 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                     <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md" dir="rtl">
                         <h4 className="text-xl font-bold text-gray-800 mb-6">إضافة درجة</h4>
                         <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">الطالب</label>
+                                <select
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#006F88]"
+                                    value={addForm.stu_id}
+                                    onChange={(e) => setAddForm({ ...addForm, stu_id: e.target.value })}
+                                >
+                                    <option value="">اختر الطالب</option>
+                                    {students.map((student) => (
+                                        <option key={student.stu_id} value={student.stu_id}>
+                                            {student.stu_name} ({student.stu_email})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                             {(
                                 [
-                                    { label: "رقم الطالب (stu_id)", key: "stu_id",     type: "text"   },
                                     { label: "نوع الامتحان",         key: "type",       type: "text"   },
                                     { label: "الدرجة",               key: "score",      type: "number" },
                                     { label: "درجة النجاح",          key: "pass_score", type: "number" },
@@ -339,15 +375,19 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                         <h4 className="text-xl font-bold text-gray-800 mb-6">إضافة الدرجة النهائية</h4>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    رقم تسجيل الطالب (co_stu_id)
-                                </label>
-                                <input
-                                    type="text"
+                                <label className="block text-sm font-medium text-gray-700 mb-1">الطالب</label>
+                                <select
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#006F88]"
                                     value={finalForm.co_stu_id}
                                     onChange={(e) => setFinalForm({ ...finalForm, co_stu_id: e.target.value })}
-                                />
+                                >
+                                    <option value="">اختر الطالب</option>
+                                    {students.map((student) => (
+                                        <option key={student.stu_id} value={student.co_stu_id || student.stu_id}>
+                                            {student.stu_name} ({student.stu_email})
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
