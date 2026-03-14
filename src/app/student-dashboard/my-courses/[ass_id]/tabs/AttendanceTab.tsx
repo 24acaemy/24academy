@@ -1,157 +1,140 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FaUser, FaCalendarDay, FaCheckCircle, FaTimesCircle, FaChalkboardTeacher } from "react-icons/fa";
 import CustomLoader from "@/app/components/spinned";
 
 interface AttendanceData {
-    stu_id: string;
-    stu_name: string;
-    email: string;
-    date: string;
-    attendance: string;
-    title: string;
-    co_name: string;
-    start_time: string;
-    te_name: string;
-    te_email: string;
-    created_at: string;
+  stu_id: string;
+  name_stu: string;
+  email: string;
+  date: string;
+  attendance: string;
+  title: string;
+  co_name: string;
+  start_time: string;
+  name_te: string;
+  te_email: string;
+  created_at: string;
 }
 
 interface AttendanceTabProps {
-    ass_id: string;
+  ass_id: string;
 }
 
 const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
-    const [attendanceData, setAttendanceData] = useState<AttendanceData[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [serverMessage, setServerMessage] = useState<string | null>(null);
+  const [records, setRecords] = useState<AttendanceData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const fetchAttendanceData = useCallback(async () => {
-        try {
-            setLoading(true);
-            const response = await axios.get(`https://24onlinesystem.vercel.app/attendance?ass_id=${ass_id}`);
-
-            if (Array.isArray(response.data)) {
-                setAttendanceData(response.data);
-            } else {
-                setAttendanceData([]); // Reset if no valid data
-                setServerMessage("لا توجد بيانات للحضور لهذا المعرف الدراسي");
-            }
-        } catch (error) {
-            setLoading(false);
-
-            if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    if (error.response.status === 400) {
-                        setError(null); // Clear the error message
-                        setServerMessage(null);
-                    } else {
-                        setError(`Error: ${error.response.status} - ${error.response.data}`);
-                    }
-                } else {
-                    setError('Network Error. Please check your connection.');
-                }
-            } else {
-                setError('An unknown error occurred.');
-            }
-
-            setServerMessage(null);
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const response = await axios.get(
+          `https://24onlinesystem.vercel.app/attendance?ass_id=${ass_id}`
+        );
+        if (response.data && response.data.length > 0) {
+          setRecords(response.data);
+          setErrorMessage(null);
+        } else {
+          setRecords([]);
+          setErrorMessage("لا يوجد سجلات حضور لهذه الدورة.");
         }
-    }, [ass_id]);
-
-    useEffect(() => {
-        fetchAttendanceData();
-    }, [fetchAttendanceData]);
-
-    const formattedDate = (date: string) => {
-        return new Date(date).toLocaleDateString("en-US", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
+      } catch {
+        setErrorMessage("فشل تحميل بيانات الحضور. حاول مرة أخرى.");
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchAttendance();
+  }, [ass_id]);
 
-    if (loading) return <CustomLoader />;
+  const present = records.filter((r) => r.attendance === "حاضر").length;
+  const absent = records.filter((r) => r.attendance === "غائب").length;
+  const total = records.length;
+  const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 
-    if (error) {
-        return (
-            <div className="text-center p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">{error}</h3>
-            </div>
-        );
-    }
+  if (loading) return <CustomLoader />;
 
-    if (serverMessage) {
-        return (
-            <div className="text-center p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">{serverMessage}</h3>
-                <p>يرجى المحاولة لاحقاً أو التواصل مع الدعم الفني إذا استمرت المشكلة.</p>
-            </div>
-        );
-    }
+  return (
+    <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <h3 className="text-3xl font-semibold text-gray-800 mb-6">سجل الحضور</h3>
 
-    if (attendanceData.length === 0) {
-        return (
-            <div className="text-center p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">لا توجد بيانات للحضور</h3>
-                <p>لا توجد بيانات متاحة لعرضها، يرجى المحاولة لاحقاً.</p>
-            </div>
-        );
-    }
-
-    return (
-        <div>
-            <h3 className="text-3xl font-semibold text-gray-800 mb-6">بيانات الحضور</h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-4">
-                {attendanceData.map((data) => (
-                    <div
-                        key={data.stu_id}
-                        className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100 overflow-hidden transform hover:scale-105"
-                    >
-                        <div className="p-6">
-                            <h3 className="text-xl font-bold text-[#051568] mb-4 flex items-center">
-                                <FaUser className="mr-2 text-[#051568]" />
-                                {data.stu_name}
-                            </h3>
-                            <p className="text-lg mb-2">عنوان الدورة: {data.title}</p>
-                            <p className="text-sm text-gray-500">
-                                {formattedDate(data.date)}
-                            </p>
-
-                            <div className="mt-4">
-                                <div className="mb-2 flex items-center">
-                                    <FaCalendarDay className="mr-2 text-gray-600" />
-                                    <span className="text-gray-600">الحضور: {data.attendance}</span>
-                                </div>
-
-                                <div className="mb-2 flex items-center">
-                                    {data.attendance === "موجود" ? (
-                                        <FaCheckCircle className="mr-2 text-green-600" />
-                                    ) : (
-                                        <FaTimesCircle className="mr-2 text-red-600" />
-                                    )}
-                                    <span className="text-gray-600">الحالة: {data.attendance}</span>
-                                </div>
-
-                                <div className="mt-4">
-                                    <button
-                                        onClick={() => window.open(data.co_name, "_blank")}
-                                        className="mr-2 text-white bg-blue-500 hover:bg-blue-700 p-2 rounded"
-                                    >
-                                        <FaChalkboardTeacher className="mr-2" />
-                                        رابط الدورة
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-[#051568] text-white rounded-lg p-4 text-center">
+          <p className="text-2xl font-bold">{total}</p>
+          <p className="text-sm mt-1">إجمالي الدروس</p>
         </div>
-    );
+        <div className="bg-green-600 text-white rounded-lg p-4 text-center">
+          <p className="text-2xl font-bold">{present}</p>
+          <p className="text-sm mt-1">حاضر</p>
+        </div>
+        <div className="bg-red-500 text-white rounded-lg p-4 text-center">
+          <p className="text-2xl font-bold">{absent}</p>
+          <p className="text-sm mt-1">غائب</p>
+        </div>
+        <div className="bg-[#006F88] text-white rounded-lg p-4 text-center">
+          <p className="text-2xl font-bold">{percentage}%</p>
+          <p className="text-sm mt-1">نسبة الحضور</p>
+          <div className="mt-2 bg-white/30 rounded-full h-2">
+            <div
+              className="bg-white rounded-full h-2 transition-all"
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {errorMessage && (
+        <div className="text-red-600 mb-4">{errorMessage}</div>
+      )}
+
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-md">
+        <table className="min-w-full table-auto">
+          <thead className="bg-[#051568] text-white">
+            <tr>
+              <th className="py-4 px-6 text-center">الدرس</th>
+              <th className="py-4 px-6 text-center">التاريخ</th>
+              <th className="py-4 px-6 text-center">الوقت</th>
+              <th className="py-4 px-6 text-center">الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            {records.length > 0 ? (
+              records.map((record, index) => (
+                <tr
+                  key={`${record.stu_id}-${record.date}`}
+                  className={`${
+                    index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                  } hover:bg-indigo-100 transition-all duration-300 ease-in-out`}
+                >
+                  <td className="py-4 px-6 text-center">{record.title}</td>
+                  <td className="py-4 px-6 text-center">{record.date}</td>
+                  <td className="py-4 px-6 text-center">{record.start_time}</td>
+                  <td className="py-4 px-6 text-center">
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        record.attendance === "حاضر"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {record.attendance}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4} className="py-4 px-6 text-center text-gray-500">
+                  لا توجد بيانات
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 };
 
 export default AttendanceTab;
