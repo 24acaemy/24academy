@@ -1,26 +1,27 @@
 import React from 'react';
 
+export type TeacherTab = 'lessons' | 'Attendance' | 'grades';
+
 interface TabBarProps {
-    activeTab: 'students' | 'lessons'| 'marks'; // Tab types for the course details
-    onTabChange: (tab: 'students' | 'lessons' | 'marks') => void; // Function to handle tab changes
-    dynamicTabs: { label: string; value: 'students' | 'lessons'| 'marks'  }[]; // Dynamic tab options
+    activeTab: TeacherTab;
+    onTabChange: (tab: TeacherTab) => void;
+    dynamicTabs: { label: string; value: TeacherTab }[];
 }
 
 const TabBar: React.FC<TabBarProps> = ({ activeTab, onTabChange, dynamicTabs }) => {
-    if (!dynamicTabs || dynamicTabs.length === 0) {
-        return null; // Return nothing if dynamicTabs is empty or undefined
-    }
+    if (!dynamicTabs || dynamicTabs.length === 0) return null;
 
     return (
         <div className="mt-6 flex space-x-6 border-b-2 pb-2">
             {dynamicTabs.map((tab) => (
                 <button
                     key={tab.value}
-                    className={`py-2 px-6 text-lg font-medium transition-all duration-200 ${activeTab === tab.value
+                    className={`py-2 px-6 text-lg font-medium transition-all duration-200 ${
+                        activeTab === tab.value
                             ? 'text-blue-600 border-b-2 border-blue-600'
                             : 'text-gray-600 hover:text-blue-500'
-                        }`}
-                    onClick={() => onTabChange(tab.value)} // Call the onTabChange function with the value of the clicked tab
+                    }`}
+                    onClick={() => onTabChange(tab.value)}
                 >
                     {tab.label}
                 </button>
