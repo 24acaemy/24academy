@@ -1,197 +1,133 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FaUser, FaFileAlt, FaCheckCircle, FaTimesCircle, FaChalkboardTeacher } from "react-icons/fa";
 import CustomLoader from "@/app/components/spinned";
 
 interface GradeData {
-    stu_id: string;
-    stu_name: string;
-    email: string;
-    type: string;
-    state: string;
-    score: string;
-    pass_score: string;
-    max_score: string;
-    co_name: string;
-    start_time: string;
-    start_date: string;
-    end_date: string;
-    te_name: string;
-    created_at: string;
+  stu_id: string;
+  name_stu: string;
+  email: string;
+  type: string;
+  state: string;
+  score: string;
+  pass_score: number;
+  max_score: number;
+  co_name: string;
+  start_time: string;
+  start_date: string;
+  end_date: string;
+  name_te: string;
+  created_at: string;
 }
 
 interface GradesTabProps {
-    ass_id: string; // Add ass_id here to identify the course/assignment
+  ass_id: string;
 }
 
 const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
-    const [grades, setGrades] = useState<GradeData[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [serverMessage, setServerMessage] = useState<string | null>(null); // State to hold server message
+  const [grades, setGrades] = useState<GradeData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const fetchGrades = useCallback(async () => {
-        try {
-            setLoading(true);
-            const response = await axios.get(`https://24onlinesystem.vercel.app/grades?ass_id=${ass_id}`);
-
-            if (Array.isArray(response.data)) {
-                setGrades(response.data);
-            } else {
-                setGrades([]); // Reset grades if no valid data
-                setServerMessage("لا توجد درجات لهذا المعرف الدراسي");
-            }
-        } catch (error) {
-            setLoading(false); // End loading immediately upon error
-
-            if (axios.isAxiosError(error)) {
-                // Handle axios-specific errors
-                if (error.response) {
-                    if (error.response.status === 400) {
-                        // If error status is 400, show a table with "No marks available"
-                        setError(null); // Clear the error message, as we're showing a different table for 400
-                        setServerMessage(null); // Clear any server message
-                    } else {
-                        setError(`Error: ${error.response.status} - ${error.response.data}`);
-                    }
-                } else {
-                    setError('Network Error. Please check your connection.');
-                }
-            } else {
-                // General error fallback
-                setError('An unknown error occurred.');
-            }
-
-            setServerMessage(null); // Clear any server messages on error
+  useEffect(() => {
+    const fetchGrades = async () => {
+      try {
+        const response = await axios.get(
+          `https://24onlinesystem.vercel.app/grades?ass_id=${ass_id}`
+        );
+        if (response.data && response.data.length > 0) {
+          setGrades(response.data);
+          setErrorMessage(null);
+        } else {
+          setGrades([]);
+          setErrorMessage("لا توجد درجات لهذه الدورة.");
         }
-    }, [ass_id]);
-
-    useEffect(() => {
-        fetchGrades();
-    }, [fetchGrades]);
-
-    const formattedDate = (date: string) => {
-        return new Date(date).toLocaleDateString("en-US", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
+      } catch {
+        setErrorMessage("فشل تحميل الدرجات. حاول مرة أخرى.");
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchGrades();
+  }, [ass_id]);
 
-    if (loading) return <CustomLoader />;
+  if (loading) return <CustomLoader />;
 
-    // If error status is 400, show a table with student names and no marks available
-    if (error && error.includes("400")) {
-        return (
-            <div className="text-center p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">لا توجد درجات حالياً</h3>
-                <p>لا توجد درجات متاحة لعرضها في الوقت الحالي.</p>
-                <table className="min-w-full mt-4 table-auto border-collapse">
-                    <thead>
-                        <tr>
-                            <th className="border px-4 py-2 text-left">اسم الطالب</th>
-                            <th className="border px-4 py-2 text-left">الدرجة</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {/* Create a row for each student */}
-                        {grades.length > 0 ? (
-                            grades.map((grade) => (
-                                <tr key={grade.stu_id}>
-                                    <td className="border px-4 py-2">{grade.stu_name}</td>
-                                    <td className="border px-4 py-2 text-gray-500">لا توجد درجات حتى الآن</td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={2} className="border px-4 py-2 text-center text-gray-500">
-                                    لا توجد درجات متاحة لعرضها.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        );
-    }
+  return (
+    <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <h3 className="text-3xl font-semibold text-gray-800 mb-6">الدرجات</h3>
 
-    // If there's a server message, display it
-    if (serverMessage) {
-        return (
-            <div className="text-center p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">{serverMessage}</h3>
-                <p>يرجى المحاولة لاحقاً أو التواصل مع الدعم الفني إذا استمر المشكلة.</p>
-            </div>
-        );
-    }
+      {errorMessage && (
+        <div className="text-red-600 mb-4">{errorMessage}</div>
+      )}
 
-    // If there are no grades
-    if (grades.length === 0) {
-        return (
-            <div className="text-center p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">لا توجد درجات عزيزي الطالب</h3>
-                <p>لا توجد درجات متاحة لعرضها، يرجى المحاولة لاحقاً.</p>
-            </div>
-        );
-    }
-
-    return (
-        <div>
-            <h3 className="text-3xl font-semibold text-gray-800 mb-6">الدرجات الخاصة بالدورة</h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-4">
-                {grades.map((grade) => (
-                    <div
-                        key={grade.stu_id}
-                        className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100 overflow-hidden transform hover:scale-105"
-                    >
-                        <div className="p-6">
-                            <h3 className="text-xl font-bold text-[#051568] mb-4 flex items-center">
-                                <FaUser className="mr-2 text-[#051568]" />
-                                {grade.stu_name}
-                            </h3>
-                            <p className="text-lg mb-2">نوع الاختبار: {grade.type}</p>
-                            <p className="text-sm text-gray-500">
-                                {formattedDate(grade.start_date)} إلى {formattedDate(grade.end_date)}
-                            </p>
-
-                            <div className="mt-4">
-                                <div className="mb-2 flex items-center">
-                                    <FaFileAlt className="mr-2 text-gray-600" />
-                                    <span className="text-gray-600">الدرجة: {grade.score} / {grade.max_score}</span>
-                                </div>
-
-                                <div className="mb-2 flex items-center">
-                                    <FaCheckCircle className="mr-2 text-green-600" />
-                                    <span className="text-gray-600">الدرجة المطلوبة للنجاح: {grade.pass_score}</span>
-                                </div>
-
-                                <div className="mb-2 flex items-center">
-                                    {grade.state === "ناجح" ? (
-                                        <FaCheckCircle className="mr-2 text-green-600" />
-                                    ) : (
-                                        <FaTimesCircle className="mr-2 text-red-600" />
-                                    )}
-                                    <span className="text-gray-600">الحالة: {grade.state}</span>
-                                </div>
-
-                                <div className="mt-4">
-                                    <button
-                                        onClick={() => window.open(grade.co_name, "_blank")}
-                                        className="mr-2 text-white bg-blue-500 hover:bg-blue-700 p-2 rounded"
-                                    >
-                                        <FaChalkboardTeacher className="mr-2" />
-                                        رابط الدورة
-                                    </button>
-                                </div>
-                            </div>
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-md">
+        <table className="min-w-full table-auto">
+          <thead className="bg-[#051568] text-white">
+            <tr>
+              <th className="py-4 px-6 text-center">نوع الامتحان</th>
+              <th className="py-4 px-6 text-center">الدرجة</th>
+              <th className="py-4 px-6 text-center">أعلى درجة</th>
+              <th className="py-4 px-6 text-center">درجة النجاح</th>
+              <th className="py-4 px-6 text-center">التقدم</th>
+              <th className="py-4 px-6 text-center">الحالة</th>
+              <th className="py-4 px-6 text-center">التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {grades.length > 0 ? (
+              grades.map((grade, index) => {
+                const pct = Math.round(
+                  (parseFloat(grade.score) / grade.max_score) * 100
+                );
+                return (
+                  <tr
+                    key={`${grade.stu_id}-${grade.type}-${index}`}
+                    className={`${
+                      index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                    } hover:bg-indigo-100 transition-all duration-300 ease-in-out`}
+                  >
+                    <td className="py-4 px-6 text-center">{grade.type}</td>
+                    <td className="py-4 px-6 text-center">{grade.score}</td>
+                    <td className="py-4 px-6 text-center">{grade.max_score}</td>
+                    <td className="py-4 px-6 text-center">{grade.pass_score}</td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-[#006F88] rounded-full h-2 transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
                         </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
+                        <span className="text-xs text-gray-600 w-10">{pct}%</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-center">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                          grade.state === "ناجح"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {grade.state}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-center">{grade.created_at}</td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={7} className="py-4 px-6 text-center text-gray-500">
+                  لا توجد بيانات
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 };
 
 export default GradesTab;
