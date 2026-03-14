@@ -8,7 +8,8 @@ import StudentsTab from "./components/studentstab";
 import LessonsTab from "./components/lessonstab";
 import ExamsTab from "./components/examstab";
 import GradesTab from "./components/gradestab";
-import TabBar from "./components/TabBar"; // Import the TabBar component
+import AttendanceTab from "./components/AttendanceTab";
+import TabBar from "./components/TabBar";
 
 interface CourseData {
     ass_id: string;
@@ -19,77 +20,92 @@ interface CourseData {
     end_date: string;
 }
 
-const CourseDetails = () => {
+type TeacherTab = 'students' | 'lessons' | 'grades' | 'attendance';
+
+const dynamicTabs: { label: string; value: TeacherTab }[] = [
+    { label: 'الطلاب',  value: 'students'   },
+    { label: 'الدروس',  value: 'lessons'    },
+    { label: 'الحضور',  value: 'attendance' },
+    { label: 'الدرجات', value: 'grades'     },
+];
+
+const CourseDetails: React.FC = () => {
     const { ass_id } = useParams();
     const [courseData, setCourseData] = useState<CourseData | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'students' | 'lessons' | 'grades'>('students'); // Set initial tab
+    const [loading, setLoading]       = useState<boolean>(true);
+    const [error, setError]           = useState<string | null>(null);
+    const [activeTab, setActiveTab]   = useState<TeacherTab>('students');
 
     useEffect(() => {
-        const fetchCourseData = async () => {
-            try {
-                // 🟢 Fetch all courses
-                const response = await axios.get("https://24onlinesystem.vercel.app/co_ass");
-                const courses: CourseData[] = response.data;
+        if (!ass_id) return;
 
-                // 🔍 Find the course with the matching `ass_id`
-                const matchedCourse = courses.find((course) => course.ass_id === ass_id);
-                if (!matchedCourse) {
+        const fetchCourseData = async (): Promise<void> => {
+            try {
+                const response = await axios.get<CourseData[]>(
+                    "https://24onlinesystem.vercel.app/co_ass"
+                );
+                const matched = response.data.find(
+                    (course) => course.ass_id === ass_id
+                );
+                if (!matched) {
                     setError("الدورة غير موجودة");
-                    setLoading(false);
                     return;
                 }
-                setCourseData(matchedCourse);
-            } catch (err) {
+                setCourseData(matched);
+            } catch {
                 setError("خطأ في تحميل البيانات");
             } finally {
                 setLoading(false);
             }
         };
 
-        if (ass_id) {
-            fetchCourseData();
-        }
+        fetchCourseData();
     }, [ass_id]);
 
-    if (loading) return <div className="flex justify-center items-center min-h-screen"><CustomLoader /></div>; // Center the loader
-    if (error) return <div className="text-center text-red-500">{error}</div>;
+    if (loading) return (
+        <div className="flex justify-center items-center min-h-screen">
+            <CustomLoader />
+        </div>
+    );
 
-    // Render the content based on the active tab
-    let tabContent;
-    switch (activeTab) {
-        case "students":
-            tabContent = <StudentsTab ass_id={courseData?.ass_id || ""} />;
-            break;
-        case "lessons":
-            tabContent = <LessonsTab
-                courseName={courseData?.co_name || ""}
-                teacherName={courseData?.te_name || ""}
-                ass_id={courseData?.ass_id || ""} // Pass ass_id to LessonsTab
-            />;
-            break;
-        case "exams":
-            tabContent = <ExamsTab courseName={courseData?.co_name || ""} />;
-            break;
-        case "grades":
-            tabContent = <GradesTab
-                ass_id={courseData?.ass_id || ""}
-                startTime={courseData?.start_time || ""}
-                teacherName={courseData?.te_name || ""}
-            />;
-            break;
-        default:
-            tabContent = <div>Select a tab</div>;
-            break;
-    }
+    if (error) return (
+        <div className="text-center text-red-500 mt-10">{error}</div>
+    );
 
-    // Dynamic tabs configuration
-    const dynamicTabs = [
-        { label: 'الطلاب', value: 'students' },
-        { label: 'الدروس', value: 'lessons' },
-       { label: 'الدرجات', value: 'grades' },
-    ];
+    const id: string = courseData?.ass_id ?? "";
+
+    const renderTab = (): React.ReactNode => {
+        switch (activeTab) {
+            case "students":
+                return (
+                    <StudentsTab
+                        ass_id={id}
+                    />
+                );
+            case "lessons":
+                return (
+                    <LessonsTab
+                        courseName={courseData?.co_name || ""}
+                        teacherName={courseData?.te_name || ""}
+                        ass_id={id}
+                    />
+                );
+            case "attendance":
+                return (
+                    <AttendanceTab
+                        ass_id={id}
+                    />
+                );
+            case "grades":
+                return (
+                    <GradesTab
+                        ass_id={id}
+                        startTime={courseData?.start_time || ""}
+                        teacherName={courseData?.te_name || ""}
+                    />
+                );
+        }
+    };
 
     return (
         <div className="p-6" dir="rtl">
@@ -100,11 +116,15 @@ const CourseDetails = () => {
             <p className="text-lg">المدرس: {courseData?.te_name}</p>
             <p className="text-lg">بداية الدورة: {courseData?.start_time}</p>
 
-            {/* Tab navigation */}
-            <TabBar activeTab={activeTab} onTabChange={setActiveTab} dynamicTabs={dynamicTabs} />
+            <TabBar
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                dynamicTabs={dynamicTabs}
+            />
 
-            {/* Tab content */}
-            {tabContent}
+            <div className="mt-6">
+                {renderTab()}
+            </div>
         </div>
     );
 };
