@@ -18,40 +18,55 @@ interface AttendanceData {
 }
 
 interface AddForm {
-    stu_id: string;
-    ass_id: string;
-    attendance: string;
+    co_stu_id: string;
+    le_id: string;
+    status: boolean;
     date: string;
 }
 
 interface EditForm {
-    stu_id: string;
-    ass_id: string;
-    attendance: string;
+    co_stu_id: string;
+    le_id: string;
+    status: boolean;
     date: string;
+}
+
+interface StudentData {
+    stu_id: string;
+    stu_name: string;
+    stu_email: string;
+    co_stu_id?: string;
+}
+
+interface LessonData {
+    le_id: string;
+    title: string;
 }
 
 interface AttendanceTabProps {
     ass_id: string;
 }
 
-const ATTENDANCE_OPTIONS: string[] = ["حاضر", "غائب"];
-
 const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
     const [records, setRecords]               = useState<AttendanceData[]>([]);
+    const [students, setStudents]             = useState<StudentData[]>([]);
+    const [lessons, setLessons]               = useState<LessonData[]>([]);
     const [loading, setLoading]               = useState<boolean>(true);
     const [errorMessage, setErrorMessage]     = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    const [showAddModal, setShowAddModal] = useState<boolean>(false);
-    const [addForm, setAddForm]           = useState<AddForm>({
-        stu_id: "", ass_id, attendance: "حاضر", date: "",
+    const [showAddModal, setShowAddModal]   = useState<boolean>(false);
+    const [showEditModal, setShowEditModal] = useState<boolean>(false);
+
+    const [addForm, setAddForm] = useState<AddForm>({
+        co_stu_id: "", le_id: "", status: true, date: "",
     });
 
-    const [showEditModal, setShowEditModal] = useState<boolean>(false);
-    const [editForm, setEditForm]           = useState<EditForm>({
-        stu_id: "", ass_id, attendance: "حاضر", date: "",
+    const [editForm, setEditForm] = useState<EditForm>({
+        co_stu_id: "", le_id: "", status: true, date: "",
     });
+
+    // ─── Fetch ────────────────────────────────────────────────────────────────
 
     const fetchAttendance = async (): Promise<void> => {
         setLoading(true);
@@ -68,40 +83,126 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
         }
     };
 
-    useEffect(() => { fetchAttendance(); }, [ass_id]);
+    const fetchStudents = async (): Promise<void> => {
+        try {
+            const response = await axios.get<StudentData[]>(
+                `https://24onlinesystem.vercel.app/course_students/ass_id=${ass_id}`
+            );
+            console.log("students:", response.data);
+            setStudents(response.data?.length > 0 ? response.data : []);
+        } catch {
+            // silent
+        }
+    };
+
+    const fetchLessons = async (): Promise<void> => {
+        try {
+            const response = await axios.get<LessonData[]>(
+                `https://24onlinesystem.vercel.app/lessons?ass_id=${ass_id}`
+            );
+            console.log("lessons:", response.data);
+            setLessons(response.data?.length > 0 ? response.data : []);
+        } catch {
+            // silent
+        }
+    };
+
+    useEffect(() => {
+        fetchAttendance();
+        fetchStudents();
+        fetchLessons();
+    }, [ass_id]);
+
+    // ─── Handlers ─────────────────────────────────────────────────────────────
 
     const handleAdd = async (): Promise<void> => {
+        if (!addForm.co_stu_id) {
+            setErrorMessage("الرجاء اختيار الطالب.");
+            return;
+        }
+        if (!addForm.le_id) {
+            setErrorMessage("الرجاء اختيار الدرس.");
+            return;
+        }
+        if (!addForm.date) {
+            setErrorMessage("الرجاء اختيار التاريخ.");
+            return;
+        }
+
+        const payload = {
+            co_stu_id: parseInt(addForm.co_stu_id),
+            le_id:     parseInt(addForm.le_id),
+            status:    addForm.status,
+            date:      addForm.date,
+        };
+
+        console.log("POST /attendance payload:", payload);
+
         try {
-            await axios.post("https://24onlinesystem.vercel.app/attendance", addForm);
+            await axios.post("https://24onlinesystem.vercel.app/attendance", payload);
             setSuccessMessage("تمت إضافة سجل الحضور بنجاح.");
+            setErrorMessage(null);
             setShowAddModal(false);
-            setAddForm({ stu_id: "", ass_id, attendance: "حاضر", date: "" });
+            setAddForm({ co_stu_id: "", le_id: "", status: true, date: "" });
             fetchAttendance();
-        } catch {
-            setErrorMessage("فشل إضافة سجل الحضور.");
+        } catch (error: any) {
+            console.error("POST /attendance error:", error?.response?.data);
+            setErrorMessage(
+                error?.response?.data?.message ||
+                error?.response?.data?.error   ||
+                JSON.stringify(error?.response?.data) ||
+                "فشل إضافة سجل الحضور."
+            );
         }
     };
 
     const handleEditOpen = (record: AttendanceData): void => {
+        const selectedStudent = students.find((s) => s.stu_id === record.stu_id);
+        const selectedLesson  = lessons.find((l) => l.title === record.title);
         setEditForm({
-            stu_id: record.stu_id,
-            ass_id,
-            attendance: record.attendance,
-            date: record.date,
+            co_stu_id: selectedStudent?.co_stu_id || record.stu_id,
+            le_id:     selectedLesson?.le_id || "",
+            status:    record.attendance === "حاضر",
+            date:      record.date,
         });
+        setErrorMessage(null);
+        setSuccessMessage(null);
         setShowEditModal(true);
     };
 
     const handleEdit = async (): Promise<void> => {
+        if (!editForm.date) {
+            setErrorMessage("الرجاء اختيار التاريخ.");
+            return;
+        }
+
+        const payload = {
+            co_stu_id: parseInt(editForm.co_stu_id),
+            le_id:     parseInt(editForm.le_id),
+            status:    editForm.status,
+            date:      editForm.date,
+        };
+
+        console.log("PUT /attendance payload:", payload);
+
         try {
-            await axios.put("https://24onlinesystem.vercel.app/attendance", editForm);
+            await axios.put("https://24onlinesystem.vercel.app/attendance", payload);
             setSuccessMessage("تم تعديل سجل الحضور بنجاح.");
+            setErrorMessage(null);
             setShowEditModal(false);
             fetchAttendance();
-        } catch {
-            setErrorMessage("فشل تعديل سجل الحضور.");
+        } catch (error: any) {
+            console.error("PUT /attendance error:", error?.response?.data);
+            setErrorMessage(
+                error?.response?.data?.message ||
+                error?.response?.data?.error   ||
+                JSON.stringify(error?.response?.data) ||
+                "فشل تعديل سجل الحضور."
+            );
         }
     };
+
+    // ─── Stats ────────────────────────────────────────────────────────────────
 
     const present: number    = records.filter((r) => r.attendance === "حاضر").length;
     const absent: number     = records.filter((r) => r.attendance === "غائب").length;
@@ -110,12 +211,20 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
 
     if (loading) return <CustomLoader />;
 
+    // ─── Render ───────────────────────────────────────────────────────────────
+
     return (
         <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+
+            {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-3xl font-semibold text-gray-800">سجل الحضور</h3>
                 <button
-                    onClick={() => setShowAddModal(true)}
+                    onClick={() => {
+                        setErrorMessage(null);
+                        setSuccessMessage(null);
+                        setShowAddModal(true);
+                    }}
                     className="bg-[#006F88] text-white px-5 py-2 rounded-lg hover:bg-[#005a70] transition"
                 >
                     + إضافة حضور
@@ -148,6 +257,7 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
                 </div>
             </div>
 
+            {/* Alerts */}
             {successMessage && (
                 <div className="text-green-600 mb-4 bg-green-50 p-3 rounded-lg">{successMessage}</div>
             )}
@@ -213,27 +323,53 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
                 </table>
             </div>
 
-            {/* Add Modal */}
+            {/* ── Add Modal ──────────────────────────────────────────────────── */}
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md" dir="rtl">
                         <h4 className="text-xl font-bold text-gray-800 mb-6">إضافة سجل حضور</h4>
                         <div className="space-y-4">
+
+                            {/* Student dropdown */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    رقم الطالب (stu_id)
-                                </label>
-                                <input
-                                    type="text"
+                                <label className="block text-sm font-medium text-gray-700 mb-1">الطالب</label>
+                                <select
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#006F88]"
-                                    value={addForm.stu_id}
-                                    onChange={(e) => setAddForm({ ...addForm, stu_id: e.target.value })}
-                                />
+                                    value={addForm.co_stu_id}
+                                    onChange={(e) => setAddForm({ ...addForm, co_stu_id: e.target.value })}
+                                >
+                                    <option value="">اختر الطالب</option>
+                                    {students.map((student) => (
+                                        <option
+                                            key={student.stu_id}
+                                            value={student.co_stu_id || student.stu_id}
+                                        >
+                                            {student.stu_name} ({student.stu_email})
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
+
+                            {/* Lesson dropdown */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    التاريخ
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">الدرس</label>
+                                <select
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#006F88]"
+                                    value={addForm.le_id}
+                                    onChange={(e) => setAddForm({ ...addForm, le_id: e.target.value })}
+                                >
+                                    <option value="">اختر الدرس</option>
+                                    {lessons.map((lesson) => (
+                                        <option key={lesson.le_id} value={lesson.le_id}>
+                                            {lesson.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Date */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">التاريخ</label>
                                 <input
                                     type="date"
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#006F88]"
@@ -241,21 +377,25 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
                                     onChange={(e) => setAddForm({ ...addForm, date: e.target.value })}
                                 />
                             </div>
+
+                            {/* Status */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    الحالة
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">الحالة</label>
                                 <select
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#006F88]"
-                                    value={addForm.attendance}
-                                    onChange={(e) => setAddForm({ ...addForm, attendance: e.target.value })}
+                                    value={addForm.status ? "true" : "false"}
+                                    onChange={(e) => setAddForm({ ...addForm, status: e.target.value === "true" })}
                                 >
-                                    {ATTENDANCE_OPTIONS.map((opt) => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                    ))}
+                                    <option value="true">حاضر</option>
+                                    <option value="false">غائب</option>
                                 </select>
                             </div>
                         </div>
+
+                        {errorMessage && (
+                            <p className="text-red-600 text-sm mt-3 bg-red-50 p-2 rounded-lg">{errorMessage}</p>
+                        )}
+
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={handleAdd}
@@ -264,7 +404,7 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
                                 حفظ
                             </button>
                             <button
-                                onClick={() => setShowAddModal(false)}
+                                onClick={() => { setShowAddModal(false); setErrorMessage(null); }}
                                 className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition font-semibold"
                             >
                                 إلغاء
@@ -274,16 +414,33 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
                 </div>
             )}
 
-            {/* Edit Modal */}
+            {/* ── Edit Modal ─────────────────────────────────────────────────── */}
             {showEditModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md" dir="rtl">
                         <h4 className="text-xl font-bold text-gray-800 mb-6">تعديل سجل الحضور</h4>
                         <div className="space-y-4">
+
+                            {/* Lesson dropdown */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    التاريخ
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">الدرس</label>
+                                <select
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#006F88]"
+                                    value={editForm.le_id}
+                                    onChange={(e) => setEditForm({ ...editForm, le_id: e.target.value })}
+                                >
+                                    <option value="">اختر الدرس</option>
+                                    {lessons.map((lesson) => (
+                                        <option key={lesson.le_id} value={lesson.le_id}>
+                                            {lesson.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Date */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">التاريخ</label>
                                 <input
                                     type="date"
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#006F88]"
@@ -291,21 +448,25 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
                                     onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
                                 />
                             </div>
+
+                            {/* Status */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    الحالة
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">الحالة</label>
                                 <select
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#006F88]"
-                                    value={editForm.attendance}
-                                    onChange={(e) => setEditForm({ ...editForm, attendance: e.target.value })}
+                                    value={editForm.status ? "true" : "false"}
+                                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value === "true" })}
                                 >
-                                    {ATTENDANCE_OPTIONS.map((opt) => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                    ))}
+                                    <option value="true">حاضر</option>
+                                    <option value="false">غائب</option>
                                 </select>
                             </div>
                         </div>
+
+                        {errorMessage && (
+                            <p className="text-red-600 text-sm mt-3 bg-red-50 p-2 rounded-lg">{errorMessage}</p>
+                        )}
+
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={handleEdit}
@@ -314,7 +475,7 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
                                 تحديث
                             </button>
                             <button
-                                onClick={() => setShowEditModal(false)}
+                                onClick={() => { setShowEditModal(false); setErrorMessage(null); }}
                                 className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition font-semibold"
                             >
                                 إلغاء
@@ -323,6 +484,7 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ ass_id }) => {
                     </div>
                 </div>
             )}
+
         </div>
     );
 };
