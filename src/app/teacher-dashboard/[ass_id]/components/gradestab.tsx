@@ -38,8 +38,7 @@ interface StudentData {
 }
 
 interface EditGradeForm {
-    stu_id: string;
-    ass_id: string;
+    co_stu_id: string;
     type: string;
     score: string;
     pass_score: string;
@@ -51,15 +50,15 @@ interface GradesTabProps {
 }
 
 const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
-    const [grades, setGrades]                     = useState<GradeData[]>([]);
-    const [students, setStudents]                 = useState<StudentData[]>([]);
-    const [loading, setLoading]                   = useState<boolean>(true);
-    const [errorMessage, setErrorMessage]         = useState<string | null>(null);
-    const [successMessage, setSuccessMessage]     = useState<string | null>(null);
+    const [grades, setGrades]                 = useState<GradeData[]>([]);
+    const [students, setStudents]             = useState<StudentData[]>([]);
+    const [loading, setLoading]               = useState<boolean>(true);
+    const [errorMessage, setErrorMessage]     = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    const [showAddModal, setShowAddModal]         = useState<boolean>(false);
-    const [showFinalModal, setShowFinalModal]     = useState<boolean>(false);
-    const [showEditModal, setShowEditModal]       = useState<boolean>(false);
+    const [showAddModal, setShowAddModal]     = useState<boolean>(false);
+    const [showFinalModal, setShowFinalModal] = useState<boolean>(false);
+    const [showEditModal, setShowEditModal]   = useState<boolean>(false);
 
     const [addForm, setAddForm] = useState<AddGradeForm>({
         stu_id: "", ass_id, type: "", score: "", pass_score: "", max_score: "",
@@ -70,7 +69,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
     });
 
     const [editForm, setEditForm] = useState<EditGradeForm>({
-        stu_id: "", ass_id, type: "", score: "", pass_score: "", max_score: "",
+        co_stu_id: "", type: "", score: "", pass_score: "", max_score: "",
     });
 
     // ─── Fetch ────────────────────────────────────────────────────────────────
@@ -95,9 +94,10 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
             const response = await axios.get<StudentData[]>(
                 `https://24onlinesystem.vercel.app/course_students/ass_id=${ass_id}`
             );
+            console.log("fetchStudents response:", response.data);
             setStudents(response.data?.length > 0 ? response.data : []);
         } catch {
-            // silent — not critical
+            // silent
         }
     };
 
@@ -117,14 +117,20 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
             setErrorMessage("الرجاء إدخال نوع الامتحان.");
             return;
         }
+        if (!addForm.score || !addForm.pass_score || !addForm.max_score) {
+            setErrorMessage("الرجاء تعبئة جميع الحقول.");
+            return;
+        }
         if (parseFloat(addForm.score) > parseFloat(addForm.max_score)) {
             setErrorMessage("الدرجة لا يمكن أن تتجاوز الدرجة العظمى.");
             return;
         }
 
+        const selectedStudent = students.find((s) => s.stu_id === addForm.stu_id);
+        const co_stu_id       = selectedStudent?.co_stu_id || addForm.stu_id;
+
         const payload = {
-            stu_id:     parseInt(addForm.stu_id),
-            ass_id:     parseInt(ass_id),
+            co_stu_id,
             type:       addForm.type,
             score:      parseFloat(addForm.score),
             pass_score: parseFloat(addForm.pass_score),
@@ -148,6 +154,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
             setErrorMessage(
                 error?.response?.data?.message ||
                 error?.response?.data?.error   ||
+                JSON.stringify(error?.response?.data) ||
                 "فشل إضافة الدرجة."
             );
         }
@@ -182,15 +189,17 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
             setErrorMessage(
                 error?.response?.data?.message ||
                 error?.response?.data?.error   ||
+                JSON.stringify(error?.response?.data) ||
                 "فشل إضافة الدرجة النهائية."
             );
         }
     };
 
     const handleEditOpen = (grade: GradeData): void => {
+        // نبحث عن co_stu_id من قائمة الطلاب باستخدام stu_id
+        const selectedStudent = students.find((s) => s.stu_id === grade.stu_id);
         setEditForm({
-            stu_id:     grade.stu_id,
-            ass_id,
+            co_stu_id:  selectedStudent?.co_stu_id || grade.stu_id,
             type:       grade.type,
             score:      grade.score,
             pass_score: String(grade.pass_score),
@@ -208,8 +217,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
         }
 
         const payload = {
-            stu_id:     parseInt(editForm.stu_id),
-            ass_id:     parseInt(ass_id),
+            co_stu_id:  editForm.co_stu_id,
             type:       editForm.type,
             score:      parseFloat(editForm.score),
             pass_score: parseFloat(editForm.pass_score),
@@ -232,6 +240,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
             setErrorMessage(
                 error?.response?.data?.message ||
                 error?.response?.data?.error   ||
+                JSON.stringify(error?.response?.data) ||
                 "فشل تعديل الدرجة."
             );
         }
@@ -258,13 +267,21 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                 <h3 className="text-3xl font-semibold text-gray-800">درجات الطلاب</h3>
                 <div className="flex gap-3">
                     <button
-                        onClick={() => { setErrorMessage(null); setSuccessMessage(null); setShowAddModal(true); }}
+                        onClick={() => {
+                            setErrorMessage(null);
+                            setSuccessMessage(null);
+                            setShowAddModal(true);
+                        }}
                         className="bg-[#006F88] text-white px-5 py-2 rounded-lg hover:bg-[#005a70] transition"
                     >
                         + إضافة درجة
                     </button>
                     <button
-                        onClick={() => { setErrorMessage(null); setSuccessMessage(null); setShowFinalModal(true); }}
+                        onClick={() => {
+                            setErrorMessage(null);
+                            setSuccessMessage(null);
+                            setShowFinalModal(true);
+                        }}
                         className="bg-[#051568] text-white px-5 py-2 rounded-lg hover:bg-[#03103f] transition"
                     >
                         + الدرجة النهائية
@@ -325,8 +342,9 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                     <tbody>
                         {grades.length > 0 ? (
                             grades.map((grade, index) => {
-                                const pct: number = Math.round(
-                                    (parseFloat(grade.score) / grade.max_score) * 100
+                                const pct: number = Math.min(
+                                    Math.round((parseFloat(grade.score) / grade.max_score) * 100),
+                                    100
                                 );
                                 return (
                                     <tr
@@ -346,7 +364,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                                                 <div className="flex-1 bg-gray-200 rounded-full h-2">
                                                     <div
                                                         className="bg-[#006F88] rounded-full h-2 transition-all"
-                                                        style={{ width: `${Math.min(pct, 100)}%` }}
+                                                        style={{ width: `${pct}%` }}
                                                     />
                                                 </div>
                                                 <span className="text-xs text-gray-600 w-10">{pct}%</span>
@@ -390,7 +408,6 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                         <h4 className="text-xl font-bold text-gray-800 mb-6">إضافة درجة</h4>
                         <div className="space-y-4">
 
-                            {/* Student dropdown */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">الطالب</label>
                                 <select
@@ -407,7 +424,6 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                                 </select>
                             </div>
 
-                            {/* Other fields */}
                             {(
                                 [
                                     { label: "نوع الامتحان",  key: "type",       type: "text"   },
@@ -429,7 +445,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                         </div>
 
                         {errorMessage && (
-                            <p className="text-red-600 text-sm mt-3">{errorMessage}</p>
+                            <p className="text-red-600 text-sm mt-3 bg-red-50 p-2 rounded-lg">{errorMessage}</p>
                         )}
 
                         <div className="flex gap-3 mt-6">
@@ -457,7 +473,6 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                         <h4 className="text-xl font-bold text-gray-800 mb-6">إضافة الدرجة النهائية</h4>
                         <div className="space-y-4">
 
-                            {/* Student dropdown — uses co_stu_id */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">الطالب</label>
                                 <select
@@ -489,7 +504,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                         </div>
 
                         {errorMessage && (
-                            <p className="text-red-600 text-sm mt-3">{errorMessage}</p>
+                            <p className="text-red-600 text-sm mt-3 bg-red-50 p-2 rounded-lg">{errorMessage}</p>
                         )}
 
                         <div className="flex gap-3 mt-6">
@@ -537,7 +552,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                         </div>
 
                         {errorMessage && (
-                            <p className="text-red-600 text-sm mt-3">{errorMessage}</p>
+                            <p className="text-red-600 text-sm mt-3 bg-red-50 p-2 rounded-lg">{errorMessage}</p>
                         )}
 
                         <div className="flex gap-3 mt-6">
