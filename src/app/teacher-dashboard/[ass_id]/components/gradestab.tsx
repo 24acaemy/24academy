@@ -51,15 +51,15 @@ interface GradesTabProps {
 }
 
 const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
-    const [grades, setGrades]             = useState<GradeData[]>([]);
-    const [students, setStudents]         = useState<StudentData[]>([]);
-    const [loading, setLoading]           = useState<boolean>(true);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [grades, setGrades]                     = useState<GradeData[]>([]);
+    const [students, setStudents]                 = useState<StudentData[]>([]);
+    const [loading, setLoading]                   = useState<boolean>(true);
+    const [errorMessage, setErrorMessage]         = useState<string | null>(null);
+    const [successMessage, setSuccessMessage]     = useState<string | null>(null);
 
-    const [showAddModal, setShowAddModal]     = useState<boolean>(false);
-    const [showFinalModal, setShowFinalModal] = useState<boolean>(false);
-    const [showEditModal, setShowEditModal]   = useState<boolean>(false);
+    const [showAddModal, setShowAddModal]         = useState<boolean>(false);
+    const [showFinalModal, setShowFinalModal]     = useState<boolean>(false);
+    const [showEditModal, setShowEditModal]       = useState<boolean>(false);
 
     const [addForm, setAddForm] = useState<AddGradeForm>({
         stu_id: "", ass_id, type: "", score: "", pass_score: "", max_score: "",
@@ -72,6 +72,8 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
     const [editForm, setEditForm] = useState<EditGradeForm>({
         stu_id: "", ass_id, type: "", score: "", pass_score: "", max_score: "",
     });
+
+    // ─── Fetch ────────────────────────────────────────────────────────────────
 
     const fetchGrades = async (): Promise<void> => {
         setLoading(true);
@@ -95,48 +97,93 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
             );
             setStudents(response.data?.length > 0 ? response.data : []);
         } catch {
-            // Silent fail for students - not critical
+            // silent — not critical
         }
     };
 
-    useEffect(() => { 
-        fetchGrades(); 
+    useEffect(() => {
+        fetchGrades();
         fetchStudents();
     }, [ass_id]);
 
+    // ─── Handlers ─────────────────────────────────────────────────────────────
+
     const handleAdd = async (): Promise<void> => {
+        if (!addForm.stu_id) {
+            setErrorMessage("الرجاء اختيار الطالب.");
+            return;
+        }
+        if (!addForm.type.trim()) {
+            setErrorMessage("الرجاء إدخال نوع الامتحان.");
+            return;
+        }
         if (parseFloat(addForm.score) > parseFloat(addForm.max_score)) {
             setErrorMessage("الدرجة لا يمكن أن تتجاوز الدرجة العظمى.");
             return;
         }
+
+        const payload = {
+            stu_id:     parseInt(addForm.stu_id),
+            ass_id:     parseInt(ass_id),
+            type:       addForm.type,
+            score:      parseFloat(addForm.score),
+            pass_score: parseFloat(addForm.pass_score),
+            max_score:  parseFloat(addForm.max_score),
+            state:      parseFloat(addForm.score) >= parseFloat(addForm.pass_score)
+                            ? "ناجح"
+                            : "راسب",
+        };
+
+        console.log("POST /grades payload:", payload);
+
         try {
-            await axios.post("https://24onlinesystem.vercel.app/grades", {
-                ...addForm,
-                score:      parseFloat(addForm.score),
-                pass_score: parseFloat(addForm.pass_score),
-                max_score:  parseFloat(addForm.max_score),
-            });
+            await axios.post("https://24onlinesystem.vercel.app/grades", payload);
             setSuccessMessage("تمت إضافة الدرجة بنجاح.");
+            setErrorMessage(null);
             setShowAddModal(false);
             setAddForm({ stu_id: "", ass_id, type: "", score: "", pass_score: "", max_score: "" });
             fetchGrades();
-        } catch {
-            setErrorMessage("فشل إضافة الدرجة.");
+        } catch (error: any) {
+            console.error("POST /grades error:", error?.response?.data);
+            setErrorMessage(
+                error?.response?.data?.message ||
+                error?.response?.data?.error   ||
+                "فشل إضافة الدرجة."
+            );
         }
     };
 
     const handleFinal = async (): Promise<void> => {
+        if (!finalForm.co_stu_id) {
+            setErrorMessage("الرجاء اختيار الطالب.");
+            return;
+        }
+        if (!finalForm.total_grade) {
+            setErrorMessage("الرجاء إدخال الدرجة النهائية.");
+            return;
+        }
+
+        const payload = {
+            co_stu_id:   parseInt(finalForm.co_stu_id),
+            total_grade: parseFloat(finalForm.total_grade),
+        };
+
+        console.log("PUT /course_students payload:", payload);
+
         try {
-            await axios.put(
-                "https://24onlinesystem.vercel.app/course_students",
-                finalForm
-            );
+            await axios.put("https://24onlinesystem.vercel.app/course_students", payload);
             setSuccessMessage("تمت إضافة الدرجة النهائية بنجاح.");
+            setErrorMessage(null);
             setShowFinalModal(false);
             setFinalForm({ co_stu_id: "", total_grade: "" });
             fetchGrades();
-        } catch {
-            setErrorMessage("فشل إضافة الدرجة النهائية.");
+        } catch (error: any) {
+            console.error("PUT /course_students error:", error?.response?.data);
+            setErrorMessage(
+                error?.response?.data?.message ||
+                error?.response?.data?.error   ||
+                "فشل إضافة الدرجة النهائية."
+            );
         }
     };
 
@@ -149,50 +196,75 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
             pass_score: String(grade.pass_score),
             max_score:  String(grade.max_score),
         });
+        setErrorMessage(null);
+        setSuccessMessage(null);
         setShowEditModal(true);
     };
 
     const handleEdit = async (): Promise<void> => {
+        if (parseFloat(editForm.score) > parseFloat(editForm.max_score)) {
+            setErrorMessage("الدرجة لا يمكن أن تتجاوز الدرجة العظمى.");
+            return;
+        }
+
+        const payload = {
+            stu_id:     parseInt(editForm.stu_id),
+            ass_id:     parseInt(ass_id),
+            type:       editForm.type,
+            score:      parseFloat(editForm.score),
+            pass_score: parseFloat(editForm.pass_score),
+            max_score:  parseFloat(editForm.max_score),
+            state:      parseFloat(editForm.score) >= parseFloat(editForm.pass_score)
+                            ? "ناجح"
+                            : "راسب",
+        };
+
+        console.log("PUT /grades payload:", payload);
+
         try {
-            await axios.put("https://24onlinesystem.vercel.app/grades", {
-                ...editForm,
-                score:      parseFloat(editForm.score),
-                pass_score: parseFloat(editForm.pass_score),
-                max_score:  parseFloat(editForm.max_score),
-            });
+            await axios.put("https://24onlinesystem.vercel.app/grades", payload);
             setSuccessMessage("تم تعديل الدرجة بنجاح.");
+            setErrorMessage(null);
             setShowEditModal(false);
             fetchGrades();
-        } catch {
-            setErrorMessage("فشل تعديل الدرجة.");
+        } catch (error: any) {
+            console.error("PUT /grades error:", error?.response?.data);
+            setErrorMessage(
+                error?.response?.data?.message ||
+                error?.response?.data?.error   ||
+                "فشل تعديل الدرجة."
+            );
         }
     };
 
-    const scores: number[] = grades
-        .map((g) => parseFloat(g.score))
-        .filter((s) => !isNaN(s));
+    // ─── Stats ────────────────────────────────────────────────────────────────
 
-    const avg: number     = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-    const highest: number = scores.length > 0 ? Math.max(...scores) : 0;
-    const lowest: number  = scores.length > 0 ? Math.min(...scores) : 0;
+    const scores: number[]  = grades.map((g) => parseFloat(g.score)).filter((s) => !isNaN(s));
+    const avg: number       = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+    const highest: number   = scores.length > 0 ? Math.max(...scores) : 0;
+    const lowest: number    = scores.length > 0 ? Math.min(...scores) : 0;
     const passCount: number = grades.filter((g) => g.state === "ناجح").length;
     const passRate: number  = grades.length > 0 ? Math.round((passCount / grades.length) * 100) : 0;
 
     if (loading) return <CustomLoader />;
 
+    // ─── Render ───────────────────────────────────────────────────────────────
+
     return (
         <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+
+            {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-3xl font-semibold text-gray-800">درجات الطلاب</h3>
                 <div className="flex gap-3">
                     <button
-                        onClick={() => setShowAddModal(true)}
+                        onClick={() => { setErrorMessage(null); setSuccessMessage(null); setShowAddModal(true); }}
                         className="bg-[#006F88] text-white px-5 py-2 rounded-lg hover:bg-[#005a70] transition"
                     >
                         + إضافة درجة
                     </button>
                     <button
-                        onClick={() => setShowFinalModal(true)}
+                        onClick={() => { setErrorMessage(null); setSuccessMessage(null); setShowFinalModal(true); }}
                         className="bg-[#051568] text-white px-5 py-2 rounded-lg hover:bg-[#03103f] transition"
                     >
                         + الدرجة النهائية
@@ -200,7 +272,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                 </div>
             </div>
 
-            {/* Aggregate Stats */}
+            {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-[#051568] text-white rounded-lg p-4 text-center">
                     <p className="text-2xl font-bold">{avg}</p>
@@ -226,6 +298,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                 </div>
             </div>
 
+            {/* Alerts */}
             {successMessage && (
                 <div className="text-green-600 mb-4 bg-green-50 p-3 rounded-lg">{successMessage}</div>
             )}
@@ -273,7 +346,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                                                 <div className="flex-1 bg-gray-200 rounded-full h-2">
                                                     <div
                                                         className="bg-[#006F88] rounded-full h-2 transition-all"
-                                                        style={{ width: `${pct}%` }}
+                                                        style={{ width: `${Math.min(pct, 100)}%` }}
                                                     />
                                                 </div>
                                                 <span className="text-xs text-gray-600 w-10">{pct}%</span>
@@ -310,12 +383,14 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                 </table>
             </div>
 
-            {/* Add Grade Modal */}
+            {/* ── Add Grade Modal ─────────────────────────────────────────────── */}
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md" dir="rtl">
                         <h4 className="text-xl font-bold text-gray-800 mb-6">إضافة درجة</h4>
                         <div className="space-y-4">
+
+                            {/* Student dropdown */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">الطالب</label>
                                 <select
@@ -331,12 +406,14 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                                     ))}
                                 </select>
                             </div>
+
+                            {/* Other fields */}
                             {(
                                 [
-                                    { label: "نوع الامتحان",         key: "type",       type: "text"   },
-                                    { label: "الدرجة",               key: "score",      type: "number" },
-                                    { label: "درجة النجاح",          key: "pass_score", type: "number" },
-                                    { label: "الدرجة العظمى",        key: "max_score",  type: "number" },
+                                    { label: "نوع الامتحان",  key: "type",       type: "text"   },
+                                    { label: "الدرجة",        key: "score",      type: "number" },
+                                    { label: "درجة النجاح",   key: "pass_score", type: "number" },
+                                    { label: "الدرجة العظمى", key: "max_score",  type: "number" },
                                 ] as { label: string; key: keyof AddGradeForm; type: string }[]
                             ).map(({ label, key, type }) => (
                                 <div key={key}>
@@ -350,6 +427,11 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                                 </div>
                             ))}
                         </div>
+
+                        {errorMessage && (
+                            <p className="text-red-600 text-sm mt-3">{errorMessage}</p>
+                        )}
+
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={handleAdd}
@@ -358,7 +440,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                                 حفظ
                             </button>
                             <button
-                                onClick={() => setShowAddModal(false)}
+                                onClick={() => { setShowAddModal(false); setErrorMessage(null); }}
                                 className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition font-semibold"
                             >
                                 إلغاء
@@ -368,12 +450,14 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                 </div>
             )}
 
-            {/* Final Grade Modal */}
+            {/* ── Final Grade Modal ───────────────────────────────────────────── */}
             {showFinalModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md" dir="rtl">
                         <h4 className="text-xl font-bold text-gray-800 mb-6">إضافة الدرجة النهائية</h4>
                         <div className="space-y-4">
+
+                            {/* Student dropdown — uses co_stu_id */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">الطالب</label>
                                 <select
@@ -383,16 +467,18 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                                 >
                                     <option value="">اختر الطالب</option>
                                     {students.map((student) => (
-                                        <option key={student.stu_id} value={student.co_stu_id || student.stu_id}>
+                                        <option
+                                            key={student.stu_id}
+                                            value={student.co_stu_id || student.stu_id}
+                                        >
                                             {student.stu_name} ({student.stu_email})
                                         </option>
                                     ))}
                                 </select>
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    الدرجة النهائية
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">الدرجة النهائية</label>
                                 <input
                                     type="number"
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#006F88]"
@@ -401,6 +487,11 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                                 />
                             </div>
                         </div>
+
+                        {errorMessage && (
+                            <p className="text-red-600 text-sm mt-3">{errorMessage}</p>
+                        )}
+
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={handleFinal}
@@ -409,7 +500,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                                 حفظ
                             </button>
                             <button
-                                onClick={() => setShowFinalModal(false)}
+                                onClick={() => { setShowFinalModal(false); setErrorMessage(null); }}
                                 className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition font-semibold"
                             >
                                 إلغاء
@@ -419,7 +510,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                 </div>
             )}
 
-            {/* Edit Grade Modal */}
+            {/* ── Edit Grade Modal ────────────────────────────────────────────── */}
             {showEditModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md" dir="rtl">
@@ -444,6 +535,11 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                                 </div>
                             ))}
                         </div>
+
+                        {errorMessage && (
+                            <p className="text-red-600 text-sm mt-3">{errorMessage}</p>
+                        )}
+
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={handleEdit}
@@ -452,7 +548,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                                 تحديث
                             </button>
                             <button
-                                onClick={() => setShowEditModal(false)}
+                                onClick={() => { setShowEditModal(false); setErrorMessage(null); }}
                                 className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition font-semibold"
                             >
                                 إلغاء
@@ -461,6 +557,7 @@ const GradesTab: React.FC<GradesTabProps> = ({ ass_id }) => {
                     </div>
                 </div>
             )}
+
         </div>
     );
 };
